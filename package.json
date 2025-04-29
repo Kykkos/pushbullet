@@ -16,10 +16,12 @@
 	},
 	"dependencies": {
 		"esbuild": "^0.17.16",
-		"ws": "^8.13.0"
+		"ws": "^8.13.0",
+		"axios": "^1.7.2"
 	},
 	"devDependencies": {
 		"@types/node": "^18.15.11",
-		"@types/ws": "^8.5.4"
+		"@types/ws": "^8.5.4",
+		"@types/axios": "^0.14.0"
 	}
 }
