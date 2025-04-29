@@ -1,12 +1,14 @@
 {
   "compilerOptions": {
-    "allowJs": true,
+    "target": "ESNext",
+    "module": "CommonJS",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
     "esModuleInterop": true,
-    "isolatedModules": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "outDir": "dist",
-    "paths": { "~/*": ["./src/*"] },
-    "target": "ESNext"
-  }
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }
