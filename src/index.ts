@@ -1,36 +1,41 @@
-import { heartbeat, keepAlive } from "./utils/keepalive.js"
-import { ask } from "./utils/log.js"
-import {
-	broadcastMessage,
-	chooseNickname,
-	chooseRoom,
-	close,
-} from "./utils/message.js"
-import { Socket, newState } from "./utils/state.js"
-import { WebSocketServer } from "ws"
+import WebSocket from 'ws';
+import axios from 'axios';
 
-const wss = new WebSocketServer({ port: Number(process.env.PORT) })
+// Charger les variables d'environnement
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN || '<votre_access_token>';
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || '<votre_n8n_webhook_url>';
 
-wss.on("connection", (ws: Socket) => {
-	const state = newState(ws)
-	ask(ws, "Room Code")
+// Connexion au WebSocket Pushbullet
+const ws = new WebSocket(`wss://stream.pushbullet.com/websocket/${ACCESS_TOKEN}`);
 
-	ws.on("message", (data) => {
-		const message = data.toString()
+ws.on('open', () => {
+    console.log('Connecté au WebSocket Pushbullet');
+});
 
-		switch (state.status) {
-			case "ROOM":
-				return chooseRoom(message, state)
-			case "NICKNAME":
-				return chooseNickname(message, state)
-			default:
-				return broadcastMessage(message, state)
-		}
-	})
+ws.on('message', (data: string) => {
+    const message = JSON.parse(data);
 
-	ws.on("pong", heartbeat)
-	ws.on("close", () => close(state))
-})
+    // Filtrer les messages de type "push" avec "type: mirror" pour les SMS
+    if (message.type === 'push' && message.push?.type === 'mirror' && message.push.package_name === 'com.google.android.apps.messaging') {
+        console.log('Notification SMS reçue :', message.push);
 
-const interval = keepAlive(wss)
-wss.on("close", () => clearInterval(interval))
+        // Envoyer la notification à n8n via webhook
+        axios.post(N8N_WEBHOOK_URL, message.push)
+            .then(() => console.log('Notification envoyée à n8n'))
+            .catch((error) => console.error('Erreur lors de l\'envoi à n8n :', error.message));
+    }
+});
+
+ws.on('error', (error) => {
+    console.error('Erreur WebSocket :', error);
+});
+
+ws.on('close', () => {
+    console.log('Connexion WebSocket fermée. Reconnexion dans 5 secondes...');
+    setTimeout(() => {
+        const ws = new WebSocket(`wss://stream.pushbullet.com/websocket/${ACCESS_TOKEN}`);
+    }, 5000);
+});
+
+// Garder le serveur actif
+console.log('Serveur démarré');
